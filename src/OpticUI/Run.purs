@@ -33,7 +33,7 @@ import           DOM.Node.Node         (appendChild)
 --------------------------------------------------------------------------------
 
 type MemoInitFin = {initializers :: StrMap VD.Props, finalizers :: StrMap VD.Props}
-type Driver eff s = (s -> s) -> Eff eff Unit
+type Driver eff s = (s -> Eff eff s) -> Eff eff Unit
 
 animate
   :: forall s eff. s
@@ -66,7 +66,8 @@ animate s0 ui = do
     driver f = do
       h <- readRef gR
       s <- readRef sR
-      step h (f s)
+      newS <- f s
+      step h newS
   onLoad $ do
     appendToBody n0
     step 0 s0
