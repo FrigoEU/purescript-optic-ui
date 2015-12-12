@@ -52,7 +52,6 @@ runUI (UI u) = u
 
 --------------------------------------------------------------------------------
 
-
 newtype Handler eff t s = Handler ((s -> t) -> Eff eff Unit)
 
 instance handlerProfunctor :: Profunctor (Handler eff) where
@@ -62,6 +61,7 @@ runHandler :: forall eff s t. Handler eff t s -> (s -> t) -> Eff eff Unit
 runHandler (Handler h) = h
 
 ------------------------------------------------------------
+
 -- | Create a static `UI` component from a view.
 ui :: forall eff v s t. v -> UI eff v s t
 ui v = UI \_ _ -> pure v
