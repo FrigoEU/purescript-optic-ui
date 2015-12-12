@@ -28,7 +28,7 @@ import           Data.Functor.Contravariant (Contravariant, cmap)
 --------------------------------------------------------------------------------
 
 newtype UI eff v s t = UI
-  ( s -> Handler eff t -> Eff eff v )
+  ( s -> Handler eff t s -> Eff eff v )
 
 instance uiProfunctor :: Profunctor (UI eff v) where
   dimap f g (UI u) = UI \s h -> u (f s) (cmap g h)
@@ -47,27 +47,27 @@ instance uiSemigroup :: (Semigroup v) => Semigroup (UI eff v s t) where
 instance uiMonoid :: (Monoid v) => Monoid (UI eff v s t) where
   mempty = UI \_ _ -> pure mempty
 
-runUI :: forall eff v s t. UI eff v s t -> s -> Handler eff t -> Eff eff v
+runUI :: forall eff v s t. UI eff v s t -> s -> Handler eff t s -> Eff eff v
 runUI (UI u) = u
 
 --------------------------------------------------------------------------------
 
-newtype Handler eff s = Handler (s -> Eff eff Unit)
 
-instance handlerContravariant :: Contravariant (Handler eff) where
-  cmap f (Handler h) = Handler (h <<< f)
+newtype Handler eff t s = Handler ((s -> t) -> Eff eff Unit)
 
-runHandler :: forall eff s. Handler eff s -> s -> Eff eff Unit
+instance handlerProfunctor :: Profunctor (Handler eff) where
+  dimap f g (Handler h) = Handler \h' -> h (g >>> h' >>> f)
+
+runHandler :: forall eff s t. Handler eff t s -> (s -> t) -> Eff eff Unit
 runHandler (Handler h) = h
 
---------------------------------------------------------------------------------
-
+------------------------------------------------------------
 -- | Create a static `UI` component from a view.
 ui :: forall eff v s t. v -> UI eff v s t
 ui v = UI \_ _ -> pure v
 
 -- | Access the state and the handler for an `UI` component.
-with :: forall eff v s t. (s -> Handler eff t -> UI eff v s t) -> UI eff v s t
+with :: forall eff v s t. (s -> Handler eff t s -> UI eff v s t) -> UI eff v s t
 with f = UI \s h -> case f s h of UI u -> u s h
 
 -- | Manipulate the view of an `UI` component.
